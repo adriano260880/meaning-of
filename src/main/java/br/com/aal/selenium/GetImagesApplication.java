@@ -14,10 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @SpringBootApplication
 public class GetImagesApplication {
@@ -36,38 +33,29 @@ public class GetImagesApplication {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         driver.get("https://www.google.com/search");
-        String word = null;
-        String type = "all";
-        if (args.length != 0) {
-            type = args[0];
-        }
 
-        GetWords getWords = new GetWordsImpl();
-        GetWords getVerbs = new GetVerbsImpl();
-        GetWords getAnimals = new GetAnimalsImpl();
-        GetWords getFruits = new GetFruitsImpl();
-        GetWords getPhrasalVerbs = new GetPhrasalVerbsImpl();
+        Map<String, GetWords> providers = Map.of(
+                "all", new GetWordsImpl(),
+                "verb", new GetVerbsImpl(),
+                "animal", new GetAnimalsImpl(),
+                "fruit", new GetFruitsImpl(),
+                "phrasal-verbs", new GetPhrasalVerbsImpl()
+        );
+
+        String type = args.length != 0 ? args[0] : "all";
+
+        GetWords provider = providers.getOrDefault(type, providers.get("all"));
+
 
 
         while (true) {
             WebElement searchBox = driver.findElement(By.name("q"));
-            if (type.equals("all")) {
-                word = getWords.getWord();
-            } else if (type.equals("verb")) {
-                word = getVerbs.getWord();
-            } else if (type.equals("animal")) {
-                word = getAnimals.getWord();
-            } else if (type.equals("fruit")) {
-                word = getFruits.getWord();
-            } else if (type.equals("phrasal-verbs")) {
-                word = getPhrasalVerbs.getWord();
-            }
-
+            String word = provider.getWord();
             searchBox.clear();
             searchBox.sendKeys("meaning of "+word);
             searchBox.submit();
 
-            Thread.sleep(10000);
+            Thread.sleep(Duration.ofSeconds(10).toMillis());
         }
     }
 }
